@@ -34,7 +34,9 @@ def main():
     
     # Required arguments:
     parser.add_argument("fileName",  type=str, help="name of the orgmode agenda file to process")
-    parser.add_argument("matchYear", type=int, help="entries matching this week will be listed")
+    
+    # Optional arguments
+    parser.add_argument("-w", "--lastweek",  type=int, default=0, help="print results for LASTWEEK weeks ago:  0-this week, 1-last week, 2-two weeks ago, ...")
     
     # Mutually exclusive group:
     group  = parser.add_mutually_exclusive_group()
@@ -45,15 +47,15 @@ def main():
     args = parser.parse_args()
     
     # Arguments -> global variables
-    global verbosity, matchYear
+    global verbosity, lastWeek
     verbosity = args.verbosity
-    matchYear = args.matchYear
+    lastWeek  = args.lastweek
     
     # Find the current week:
     today = dt.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
     dow = today.weekday()
-    weekStart = today - dt.timedelta(days=dow)
-    weekEnd = weekStart + dt.timedelta(days=7)
+    weekStart = today - dt.timedelta(days=dow +  7*lastWeek)  # Start of current week if lastWeek=0; 1: last week, 2: two weeks ago, ...
+    weekEnd   = weekStart + dt.timedelta(days=7)
     print(today, dow, weekStart, weekEnd)
     
     process_file(args.fileName, weekStart,weekEnd)  # ISSUE: multiple tags in Python set, variable order!!!
