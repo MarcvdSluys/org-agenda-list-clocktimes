@@ -24,6 +24,7 @@ import argparse
 import argcomplete
 import orgparse as op
 import datetime as dt
+from termcolor import colored
 
 
 
@@ -95,7 +96,8 @@ def process_file(orgFile, weekStart, weekEnd):
         dayEnd   = dayStart  + dt.timedelta(days=1)
         
         if(verbosity > 1): print("")
-        print(dayStart.strftime("\n%a %Y-%m-%d:"))
+        print()
+        print(bluebg(dayStart.strftime("%a %Y-%m-%d:")))
         
         
         # Walk through a maximum of five levels of nodes:
@@ -126,7 +128,16 @@ def process_file(orgFile, weekStart, weekEnd):
         else:
             print("\033[A\033[A")  # Move up one line
 
-        print("Total clocked time for %s: %0.2f h." % (dayStart.strftime("%a %Y-%m-%d"), totTimeDay))
+        if(totTimeDay == 0):  # No colour
+            print("Total clocked time for %s %s:" % (dayStart.strftime("%a"),
+                                                     dayStart.strftime("%Y-%m-%d")
+                                                     ), end='' )
+            print("Total clocked time for %s h." % ("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay) ) )
+        else:  # Colour
+            print("Total clocked time for %s %s:" % (green(dayStart.strftime("%a")),
+                                                     dayStart.strftime("%Y-%m-%d")
+                                                     ), end='' )
+            print("Total clocked time for %s h." % (green("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay)) ) )
     
     
     if(verbosity == 0):
@@ -136,7 +147,8 @@ def process_file(orgFile, weekStart, weekEnd):
         print("\n")
     
     
-    print("Total clocked time for this week: %0.2f h." % (totTimeWeek))
+    print("Total clocked time for "+magentabg("this week")+": %s h." %
+          (magentabg("%s = %0.2f" % ( timeHM(totTimeWeek), totTimeWeek)) ) )
     print()
     
     return
@@ -184,8 +196,8 @@ def process_headings(node):
                         
             if(verbosity > 0 and verbosity <= 1 and headTime > 0):
                 # print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
-                print(head.clock[-1].start.strftime("%Y-%0m-%0d %0H:%0M"), end='')  # -1: last entry is usually the earliest
-                print("  %s: %s = %2.2f h" % (remove_keywords(head.heading), timeHM(headTime), headTime))
+                print(head.clock[-1].start.strftime("- %0H:%0M"), end='')  # -1: last entry is usually the earliest
+                print("  %s: %s h" % (remove_keywords(head.heading), blue("%s = %2.2f" % (timeHM(headTime), headTime))))
                 
     return
 
@@ -246,8 +258,64 @@ def remove_keywords(heading):
         heading = heading.replace(keyword+" ", "")
         
     return heading
-    
 
+
+def green(text):
+    """Print text in a green colour to stdout.
+    
+    Parameters:
+      text (str):  The text to be printed.
+    
+    Returns:
+      (str):  The coloured string.
+    
+    """
+    
+    return colored(text, "green", attrs=['bold'])
+    
+    
+def blue(text):
+    """Print text in a blue colour to stdout.
+    
+    Parameters:
+      text (str):  The text to be printed.
+    
+    Returns:
+      (str):  The coloured string.
+    
+    """
+    
+    return colored(text, "blue", attrs=['bold'])
+
+
+def bluebg(text):
+    """Print text with a blue background colour to stdout.
+    
+    Parameters:
+      text (str):  The text to be printed.
+    
+    Returns:
+      (str):  The coloured string.
+    
+    """
+    
+    return colored(text, "white", "on_blue", attrs=['bold'])
+    
+    
+def magentabg(text):
+    """Print text with a magenta background colour to stdout.
+    
+    Parameters:
+      text (str):  The text to be printed.
+    
+    Returns:
+      (str):  The coloured string.
+    
+    """
+    
+    return colored(text, "white", "on_magenta", attrs=['bold'])
+    
+    
 # ### Main ###
-if __name__=="__main__": main()
+if(__name__=="__main__"): main()
 
