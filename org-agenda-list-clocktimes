@@ -1,6 +1,6 @@
 #!/bin/env python
 
-#  Copyright (c) 2020  Marc van der Sluys - marc.vandersluys.nl
+#  Copyright (c) 2021  Marc van der Sluys - marc.vandersluys.nl
 #   
 #  This file is part of the org-agenda-list-clocktimes Python package, containing a Python module to list
 #  clock times from your emacs orgmode agenda.  See: https://github.com/MarcvdSluys/org-agenda-list-clocktimes
@@ -57,6 +57,7 @@ def main():
     weekStart = today - dt.timedelta(days=dow +  7*lastWeek)  # Start of current week if lastWeek=0; 1: last week, 2: two weeks ago, ...
     weekEnd   = weekStart + dt.timedelta(days=7)
     print(today, dow, weekStart, weekEnd)
+    
     
     process_file(args.fileName, weekStart,weekEnd)  # ISSUE: multiple tags in Python set, variable order!!!
     
@@ -183,7 +184,7 @@ def process_headings(node):
                 
             if(verbosity <= 1 and headTime > 0):
                 print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
-                print("  %s: %s = %2.2f h" % (head.heading, timeHM(headTime), headTime))
+                print("  %s: %s = %2.2f h" % (remove_keywords(head.heading), timeHM(headTime), headTime))
                 
     return
 
@@ -225,6 +226,26 @@ def timeHM(hours):
     
     return timefmt
 
+
+def remove_keywords(heading):
+    """Remove specified keywords from a node heading.
+
+    Parameters:
+      heading (str):  Node heading.
+
+    Returns:
+      (str):  Heading without keywords.
+    """
+    
+    # My keywords:
+    keywords = ["TODO", "ACTIVE", "NEXT", "PROGRESS", "WAITING", "HOLD", "DONE", "CANCELLED", "SKIPPED", "ABORTED", "OPEN",
+                "ASSIGNED", "CLOSED"]
+    
+    for keyword in keywords:
+        heading = heading.replace(keyword+" ", "")
+        
+    return heading
+    
 
 # ### Main ###
 if __name__=="__main__": main()

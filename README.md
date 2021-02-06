@@ -6,7 +6,7 @@ Karlicoss.
 
 ## Example use ##
 
-```text
+```bash
 $ org-agenda-list-clocktimes -h
 usage: org-agenda-list-clocktimes [-h] [-w LASTWEEK] [-v] fileName
 
@@ -23,11 +23,15 @@ optional arguments:
   -v, --verbosity       increase output verbosity (default: 0)
 ```
 
-```text
+```bash
 $ org-agenda-list-clocktimes Work.org  # List clock times in Work.org for the current week.
 
 $ org-agenda-list-clocktimes Work.org -w 1  # List clock times for last week.
 ```
+
+## Known issues ##
+
+* The keywords used (and to be removed from headlines) are hardcoded.
 
 
 ## Author and licence ##
