@@ -45,27 +45,30 @@ def main():
     args = parser.parse_args()
     
     # Arguments -> global variables
-    global verbosity, matchYear, weekStart,weekEnd
+    global verbosity, matchYear
     verbosity = args.verbosity
     matchYear = args.matchYear
     
+    # Find the current week:
     today = dt.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
     dow = today.weekday()
     weekStart = today - dt.timedelta(days=dow)
     weekEnd = weekStart + dt.timedelta(days=7)
     print(today, dow, weekStart, weekEnd)
     
-    process_file(args.fileName)  # ISSUE: multiple tags in Python set, variable order!!!
+    process_file(args.fileName, weekStart,weekEnd)  # ISSUE: multiple tags in Python set, variable order!!!
     
     return
     
 
 
-def process_file(orgFile):
+def process_file(orgFile, weekStart, weekEnd):
     """Process an Orgmode file with up to five levels of nodes.
     
     Args:
-      orgFile (str):   Orgmode file name
+      orgFile (str):         Orgmode file name.
+      weekStart (datetime):  Start of the current week.
+      weekEnd (datetime):    End of the current week.
     """
     
     # Read input file:
@@ -82,22 +85,29 @@ def process_file(orgFile):
     global cntSec, cntMatch, totTime
     cntSec = cntMatch = totTime = 0
     
-    # Walk through a maximum of five levels of nodes:
-    for node1 in org.children:
-        process_headings(node1)
-        
-        for node2 in node1.children:
-            process_headings(node2)
+    # Loop over days in the current week:
+    global dayStart,dayEnd
+    for iDay in range(7):
+        dayStart = weekStart + dt.timedelta(days=iDay)
+        dayEnd   = dayStart  + dt.timedelta(days=1)
+        print(dayStart.strftime("\n%Y-%m-%d:"))
+
+        # Walk through a maximum of five levels of nodes:
+        for node1 in org.children:
+            process_headings(node1)
             
-            for node3 in node2.children:
-                process_headings(node3)
+            for node2 in node1.children:
+                process_headings(node2)
                 
-                for node4 in node3.children:
-                    process_headings(node4)
+                for node3 in node2.children:
+                    process_headings(node3)
                     
-                    for node5 in node4.children:
-                        process_headings(node5)
-    
+                    for node4 in node3.children:
+                        process_headings(node4)
+                        
+                        for node5 in node4.children:
+                            process_headings(node5)
+        
     
     print("Sections found in "+orgFile+":   ", cntSec)
     print("Matching sections found in "+orgFile+":   ", cntMatch)
@@ -147,7 +157,7 @@ def process_headings(node):
             
             headTime = 0
             for timeRange in head.clock:
-                if(timeRange.start > weekStart and timeRange.end < weekEnd):
+                if(timeRange.start > dayStart and timeRange.end < dayEnd):
                     delta = timeRange.end - timeRange.start
                     deltaHR = delta.total_seconds()/3600
                     headTime += deltaHR
