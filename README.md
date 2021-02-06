@@ -31,6 +31,7 @@ $ org-agenda-list-clocktimes Work.org -w 1  # List clock times for last week.
 
 ## Known issues ##
 
+* Quick-and-dirty code.
 * The keywords used (and to be removed from headlines) are hardcoded.
 * Headers listed are not in chronological order (though multiple clock times per header are).
 

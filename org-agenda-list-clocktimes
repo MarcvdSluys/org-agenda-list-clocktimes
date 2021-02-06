@@ -132,12 +132,12 @@ def process_file(orgFile, weekStart, weekEnd):
             print("Total clocked time for %s %s:" % (dayStart.strftime("%a"),
                                                      dayStart.strftime("%Y-%m-%d")
                                                      ), end='' )
-            print("Total clocked time for %s h." % ("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay) ) )
+            print("  %s h." % ("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay) ) )
         else:  # Colour
             print("Total clocked time for %s %s:" % (green(dayStart.strftime("%a")),
                                                      dayStart.strftime("%Y-%m-%d")
                                                      ), end='' )
-            print("Total clocked time for %s h." % (green("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay)) ) )
+            print("  %s h." % (green("%s = %0.2f" % (timeHM(totTimeDay), totTimeDay)) ) )
     
     
     if(verbosity == 0):
@@ -147,8 +147,16 @@ def process_file(orgFile, weekStart, weekEnd):
         print("\n")
     
     
-    print("Total clocked time for "+magentabg("this week")+": %s h." %
-          (magentabg("%s = %0.2f" % ( timeHM(totTimeWeek), totTimeWeek)) ) )
+    if(lastWeek == 0):
+        print("Total clocked time "+magentabg("this week")+": %s h." %
+              (magentabg("%s = %0.2f" % ( timeHM(totTimeWeek), totTimeWeek)) ) )
+    elif(lastWeek == 1):
+        print("Total clocked time "+magentabg("last week")+": %s h." %
+              (magentabg("%s = %0.2f" % ( timeHM(totTimeWeek), totTimeWeek)) ) )
+    else:
+        print("Total clocked time "+magentabg("%i weeks ago" % (lastWeek))+": %s h." %
+              (magentabg("%s = %0.2f" % ( timeHM(totTimeWeek), totTimeWeek)) ) )
+    
     print()
     
     return
