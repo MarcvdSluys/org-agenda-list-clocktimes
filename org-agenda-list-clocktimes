@@ -1,0 +1,219 @@
+#!/bin/env python
+
+#  Copyright (c) 2020  Marc van der Sluys - marc.vandersluys.nl
+#   
+#  This file is part of the org-agenda-list-clocktimes Python package, containing a Python module to list
+#  clock times from your emacs orgmode agenda.  See: https://github.com/MarcvdSluys/org-agenda-list-clocktimes
+#   
+#  This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  
+#  This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+#  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License along with this code.  If not, see
+#  <http://www.gnu.org/licenses/>.
+
+
+"""List emacs orgmode agenda clock times for a certain week.
+
+"""
+
+# PYTHON_ARGCOMPLETE_OK
+import argparse
+import argcomplete
+import orgparse as op
+import datetime as dt
+
+
+
+def main():
+    # Parse command-line arguments:
+    parser = argparse.ArgumentParser(description="List orgmode agenda clock times for a given week.", 
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)  # Use capital, period, add default values
+    
+    # Required arguments:
+    parser.add_argument("fileName",  type=str, help="name of the orgmode agenda file to process")
+    parser.add_argument("matchYear", type=int, help="entries matching this week will be listed")
+    
+    # Mutually exclusive group:
+    group  = parser.add_mutually_exclusive_group()
+    parser.add_argument("-v", "--verbosity", action="count", default=0, help="increase output verbosity")  # Counts number of occurrences
+    group.add_argument("-q", "--quiet",   action="store_true", help="produce no (error) output (e.g. for cron job)")  # False by default
+    
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args()
+    
+    # Arguments -> global variables
+    global verbosity, matchYear, weekStart,weekEnd
+    verbosity = args.verbosity
+    matchYear = args.matchYear
+    
+    today = dt.datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+    dow = today.weekday()
+    weekStart = today - dt.timedelta(days=dow)
+    weekEnd = weekStart + dt.timedelta(days=7)
+    print(today, dow, weekStart, weekEnd)
+    
+    process_file(args.fileName)  # ISSUE: multiple tags in Python set, variable order!!!
+    
+    return
+    
+
+
+def process_file(orgFile):
+    """Process an Orgmode file with up to five levels of nodes.
+    
+    Args:
+      orgFile (str):   Orgmode file name
+    """
+    
+    # Read input file:
+    try:
+        org = op.load(orgFile)
+    except Exception as e:
+        print('Error opening file '+str(e))
+        exit(1)
+        
+    print("Reading entries from "+orgFile+".")
+    
+    
+    # Create counters:
+    global cntSec, cntMatch, totTime
+    cntSec = cntMatch = totTime = 0
+    
+    # Walk through a maximum of five levels of nodes:
+    for node1 in org.children:
+        process_headings(node1)
+        
+        for node2 in node1.children:
+            process_headings(node2)
+            
+            for node3 in node2.children:
+                process_headings(node3)
+                
+                for node4 in node3.children:
+                    process_headings(node4)
+                    
+                    for node5 in node4.children:
+                        process_headings(node5)
+    
+    
+    print("Sections found in "+orgFile+":   ", cntSec)
+    print("Matching sections found in "+orgFile+":   ", cntMatch)
+    print("Total clocked time: %0.2f h" % (totTime))
+    
+    return
+
+
+
+def process_headings(node):
+    """List matching Orgmode headings and clock times.
+    
+    Parameters:
+      node:  Orgmode node.
+    
+    """
+    
+    global cntSec, cntMatch, totTime
+    cntSec += 1
+    
+    if(len(node) != len(node.children) + 1): return
+    
+    # Loop over headings in this node:
+    for head in node.children:
+        
+        # year = None
+        # if(head.datelist):
+        #     year = head.datelist[0].start.year
+        # elif(head.rangelist):
+        #     year = head.rangelist[0].start.year
+        # elif(head.scheduled):
+        #     year = head.scheduled.start.year
+        # elif(head.deadline):
+        #     year = head.deadline.start.year
+        # elif(head.clock):
+        #     year = head.clock[0].start.year
+        # elif(head.closed):
+        #     year = head.closed.start.year
+        
+        
+        if(head.clock):
+            # year = head.clock[0].start.year
+            # if(year == matchYear):            # Date present, and matches
+            # print(str(head))
+            # print('clock:     ', head.clock)
+            printHeader = True
+            
+            headTime = 0
+            for timeRange in head.clock:
+                if(timeRange.start > weekStart and timeRange.end < weekEnd):
+                    delta = timeRange.end - timeRange.start
+                    deltaHR = delta.total_seconds()/3600
+                    headTime += deltaHR
+                    totTime += deltaHR
+                    
+                    if(verbosity > 1):
+                        if(printHeader): print('\n'+head.heading+":")
+                        printHeader = False
+                        # print(timeRange)
+                        # 
+                        print("  - ", timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
+                        print(" -",   timeRange.end.strftime("%0H:%0M"), end='')
+                        # print(timeRange.end)
+                        
+                        print("  ->  %s = %0.2f h." % (timedeltaHM(delta), deltaHR))
+                        
+                    # for startEnd in timeRange:
+                    #     print(startEnd)
+                # print(year)
+                cntMatch += 1
+                
+            if(verbosity <= 1 and headTime > 0):
+                print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
+                print("  %s: %s = %2.2f h" % (head.heading, timeHM(headTime), headTime))
+                
+    return
+
+
+def timedeltaHM(tdelta):
+    """Provide strftime for a datetime.timedelta object as HH:MM.
+    
+    Parameters:
+      tdelta (datetime.timedelta):  time difference.
+    
+    Returns:
+      (str):  Time as HH:MM string.
+    
+    See: https://stackoverflow.com/a/8907269/1386750
+    """
+    
+    # day = tdelta.days
+    hour, rem = divmod(tdelta.seconds, 3600)
+    minute, second = divmod(rem, 60)
+    # print(hour, minute, second)
+    timefmt = "%2.2i:%2.2i" % (hour, minute)
+    
+    return timefmt
+
+
+def timeHM(hours):
+    """Return a HH:MM string for an input time in hours.
+    
+    Parameters:
+      hours (float):  time in hours.
+    
+    Returns:
+      (str):  Time as HH:MM string.
+    """
+    
+    hour, rem = divmod(hours*3600, 3600)
+    minute, second = divmod(rem, 60)
+    timefmt = "%2.2i:%2.2i" % (hour, minute)
+    
+    return timefmt
+
+
+# ### Main ###
+if __name__=="__main__": main()
+
