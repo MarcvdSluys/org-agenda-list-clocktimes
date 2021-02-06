@@ -85,16 +85,20 @@ def process_file(orgFile, weekStart, weekEnd):
     
     
     # Create counters:
-    global cntSec, cntMatch, totTime
-    cntSec = cntMatch = totTime = 0
+    global totTimeWeek, totTimeDay
+    totTimeWeek = 0
     
     # Loop over days in the current week:
     global dayStart,dayEnd
     for iDay in range(7):
+        totTimeDay = 0
         dayStart = weekStart + dt.timedelta(days=iDay)
         dayEnd   = dayStart  + dt.timedelta(days=1)
-        print(dayStart.strftime("\n%Y-%m-%d:"))
-
+        
+        if(verbosity > 1): print("")
+        print(dayStart.strftime("\n%a %Y-%m-%d:"))
+        
+        
         # Walk through a maximum of five levels of nodes:
         for node1 in org.children:
             process_headings(node1)
@@ -111,10 +115,14 @@ def process_file(orgFile, weekStart, weekEnd):
                         for node5 in node4.children:
                             process_headings(node5)
         
+        
+        if(totTimeDay > 0 and verbosity > 0): print()
+        print("Total clocked time for %s: %0.2f h" % (dayStart.strftime("%a %Y-%m-%d"), totTimeDay))
     
-    print("Sections found in "+orgFile+":   ", cntSec)
-    print("Matching sections found in "+orgFile+":   ", cntMatch)
-    print("Total clocked time: %0.2f h" % (totTime))
+    
+    print()
+    print("Total clocked time for this week: %0.2f h" % (totTimeWeek))
+    print()
     
     return
 
@@ -128,13 +136,12 @@ def process_headings(node):
     
     """
     
-    global cntSec, cntMatch, totTime
-    cntSec += 1
+    global totTimeWeek, totTimeDay
     
     if(len(node) != len(node.children) + 1): return
     
     # Loop over headings in this node:
-    for head in node.children:
+    for head in reversed(node.children):
         
         # year = None
         # if(head.datelist):
@@ -159,12 +166,13 @@ def process_headings(node):
             printHeader = True
             
             headTime = 0
-            for timeRange in head.clock:
+            for timeRange in reversed(head.clock):
                 if(timeRange.start > dayStart and timeRange.end < dayEnd):
                     delta = timeRange.end - timeRange.start
                     deltaHR = delta.total_seconds()/3600
                     headTime += deltaHR
-                    totTime += deltaHR
+                    totTimeDay += deltaHR
+                    totTimeWeek += deltaHR
                     
                     if(verbosity > 1):
                         if(printHeader): print('\n'+head.heading+":")
@@ -180,10 +188,10 @@ def process_headings(node):
                     # for startEnd in timeRange:
                     #     print(startEnd)
                 # print(year)
-                cntMatch += 1
                 
-            if(verbosity <= 1 and headTime > 0):
-                print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
+            if(verbosity > 0 and verbosity <= 1 and headTime > 0):
+                # print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
+                print(head.clock[-1].start.strftime("%Y-%0m-%0d %0H:%0M"), end='')  # -1: last entry is usually the earliest
                 print("  %s: %s = %2.2f h" % (remove_keywords(head.heading), timeHM(headTime), headTime))
                 
     return
