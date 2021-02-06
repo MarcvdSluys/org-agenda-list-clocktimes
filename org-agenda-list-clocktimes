@@ -56,7 +56,6 @@ def main():
     dow = today.weekday()
     weekStart = today - dt.timedelta(days=dow +  7*lastWeek)  # Start of current week if lastWeek=0; 1: last week, 2: two weeks ago, ...
     weekEnd   = weekStart + dt.timedelta(days=7)
-    print(today, dow, weekStart, weekEnd)
     
     
     process_file(args.fileName, weekStart,weekEnd)  # ISSUE: multiple tags in Python set, variable order!!!
@@ -116,12 +115,28 @@ def process_file(orgFile, weekStart, weekEnd):
                             process_headings(node5)
         
         
-        if(totTimeDay > 0 and verbosity > 0): print()
-        print("Total clocked time for %s: %0.2f h" % (dayStart.strftime("%a %Y-%m-%d"), totTimeDay))
+        if(totTimeDay > 0 and verbosity > 0):
+            print()
+        elif(verbosity == 0):
+            print("\033[A\033[A\033[A")  # Move up two lines
+        elif(totTimeDay == 0 and verbosity == 1):
+            print("\033[A\033[A")  # Move up one line
+            print("                        ")  # Clear the date there
+            print("\033[A\033[A")  # Move up one line
+        else:
+            print("\033[A\033[A")  # Move up one line
+
+        print("Total clocked time for %s: %0.2f h." % (dayStart.strftime("%a %Y-%m-%d"), totTimeDay))
     
     
-    print()
-    print("Total clocked time for this week: %0.2f h" % (totTimeWeek))
+    if(verbosity == 0):
+        print("\033[A")  # Move up one line
+        print("                        ")  # Clear the date there
+    else:
+        print("\n")
+    
+    
+    print("Total clocked time for this week: %0.2f h." % (totTimeWeek))
     print()
     
     return
@@ -143,24 +158,7 @@ def process_headings(node):
     # Loop over headings in this node:
     for head in reversed(node.children):
         
-        # year = None
-        # if(head.datelist):
-        #     year = head.datelist[0].start.year
-        # elif(head.rangelist):
-        #     year = head.rangelist[0].start.year
-        # elif(head.scheduled):
-        #     year = head.scheduled.start.year
-        # elif(head.deadline):
-        #     year = head.deadline.start.year
-        # elif(head.clock):
-        #     year = head.clock[0].start.year
-        # elif(head.closed):
-        #     year = head.closed.start.year
-        
-        
         if(head.clock):
-            # year = head.clock[0].start.year
-            # if(year == matchYear):            # Date present, and matches
             # print(str(head))
             # print('clock:     ', head.clock)
             printHeader = True
@@ -177,18 +175,13 @@ def process_headings(node):
                     if(verbosity > 1):
                         if(printHeader): print('\n'+head.heading+":")
                         printHeader = False
-                        # print(timeRange)
-                        # 
+
                         print("  - ", timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
                         print(" -",   timeRange.end.strftime("%0H:%0M"), end='')
                         # print(timeRange.end)
                         
                         print("  ->  %s = %0.2f h." % (timedeltaHM(delta), deltaHR))
                         
-                    # for startEnd in timeRange:
-                    #     print(startEnd)
-                # print(year)
-                
             if(verbosity > 0 and verbosity <= 1 and headTime > 0):
                 # print(timeRange.start.strftime("%Y-%0m-%0d %0H:%0M"), end='')
                 print(head.clock[-1].start.strftime("%Y-%0m-%0d %0H:%0M"), end='')  # -1: last entry is usually the earliest
